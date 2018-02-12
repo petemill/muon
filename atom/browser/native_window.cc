@@ -94,7 +94,7 @@ NativeWindow::NativeWindow(
   // add to browser list
   ::Browser::CreateParams create_params(::Browser::Type::TYPE_TABBED,
       Profile::FromBrowserContext(inspectable_web_contents_->
-          GetWebContents()->GetBrowserContext()));
+          GetWebContents()->GetBrowserContext()), false);
   create_params.window = this;
   browser_.reset(new ::Browser(create_params));
 

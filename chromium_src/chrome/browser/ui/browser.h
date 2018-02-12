@@ -58,8 +58,8 @@ class Browser : public content::WebContentsDelegate {
   };
 
   struct CreateParams {
-    explicit CreateParams(Profile* profile);
-    CreateParams(Type type, Profile* profile);
+    explicit CreateParams(Profile* profile, bool user_gesture);
+    CreateParams(Type type, Profile* profile, bool user_gesture);
     CreateParams(const CreateParams& other);
 
     // The browser type.
@@ -80,6 +80,7 @@ class Browser : public content::WebContentsDelegate {
     ui::WindowShowState initial_show_state;
 
     bool is_session_restore;
+    bool user_gesture;
 
     // Supply a custom BrowserWindow implementation, to be used instead of the
     // default. Intended for testing.
