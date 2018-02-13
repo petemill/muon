@@ -81,12 +81,10 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate,
                        const GetFileMimeTypeCallback& callback) override {}
 
  private:
-    // Internal gateways for ShouldCompleteDownload().
     bool IsDownloadReadyForCompletion(
         content::DownloadItem* item,
         const base::Closure& internal_complete_callback);
 
-  // Get the save path set on the associated api::DownloadItem object
   void GetItemSavePath(content::DownloadItem* item, base::FilePath* path);
 
   bool GetItemExtension(content::DownloadItem* item,
@@ -100,7 +98,6 @@ class AtomDownloadManagerDelegate : public content::DownloadManagerDelegate,
       const content::DownloadTargetCallback& callback,
       content::DownloadItem* item);
 
-  // Callback function after the DownloadProtectionService completes.
   void CheckClientDownloadDone(uint32_t download_id,
                                safe_browsing::DownloadCheckResult result);
 

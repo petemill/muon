@@ -165,8 +165,6 @@ void AtomDownloadManagerDelegate::CheckDownloadUrl(
   safe_browsing::DownloadProtectionService* service =
       GetDownloadProtectionService();
   if (service) {
-    DVLOG(2) << __func__ << "() Start SB URL check for download = "
-             << download->DebugString(false);
     service->CheckDownloadUrl(download,
                               base::Bind(&CheckDownloadUrlDone, callback));
     return;
@@ -205,8 +203,6 @@ void AtomDownloadManagerDelegate::CheckClientDownloadDone(
       default:
         danger_type = content::DOWNLOAD_DANGER_TYPE_DANGEROUS_FILE;
     }
-    DCHECK_NE(danger_type,
-              content::DOWNLOAD_DANGER_TYPE_MAYBE_DANGEROUS_CONTENT);
 
     if (danger_type != content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS) {
       item->OnContentCheckCompleted(
@@ -237,7 +233,7 @@ AtomDownloadManagerDelegate::~AtomDownloadManagerDelegate() {
   }
 }
 
-void AtomDownloadManagerDelegate::GetItemSavePath(content::DownloadItem* item,
+void AtomDownloadManagerDelegate::GetItemSavePath(DownloadItem* item,
                                                   base::FilePath* path) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
@@ -249,7 +245,7 @@ void AtomDownloadManagerDelegate::GetItemSavePath(content::DownloadItem* item,
 }
 
 bool AtomDownloadManagerDelegate::GetItemExtension(
-    content::DownloadItem* item,
+    DownloadItem* item,
     base::FilePath::StringType* extension) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   v8::Locker locker(isolate);
@@ -276,18 +272,18 @@ void AtomDownloadManagerDelegate:: OnDownloadItemSelected(
     download_item->SetSavePath(paths[0]);
 
   callback.Run(paths[0],
-               content::DownloadItem::TARGET_DISPOSITION_PROMPT,
+               DownloadItem::TARGET_DISPOSITION_PROMPT,
                download_item->GetDangerType(), paths[0],
                content::DOWNLOAD_INTERRUPT_REASON_NONE);
 }
 
 void AtomDownloadManagerDelegate::OnDownloadItemSelectionCancelled(
     const content::DownloadTargetCallback& callback,
-    content::DownloadItem* item) {
+    DownloadItem* item) {
   item->Remove();
   base::FilePath path;
   callback.Run(path,
-               content::DownloadItem::TARGET_DISPOSITION_PROMPT,
+               DownloadItem::TARGET_DISPOSITION_PROMPT,
                content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, path,
                content::DOWNLOAD_INTERRUPT_REASON_USER_CANCELED);
 }
@@ -406,7 +402,7 @@ bool AtomDownloadManagerDelegate::DetermineDownloadTarget(
 }
 
 void AtomDownloadManagerDelegate::ReserveVirtualPath(
-    content::DownloadItem* download,
+    DownloadItem* download,
     const base::FilePath& virtual_path,
     bool create_directory,
     DownloadPathReservationTracker::FilenameConflictAction conflict_action,
@@ -427,14 +423,14 @@ void AtomDownloadManagerDelegate::ReserveVirtualPath(
 }
 
 bool AtomDownloadManagerDelegate::ShouldOpenDownload(
-    content::DownloadItem* download,
+    DownloadItem* download,
     const content::DownloadOpenDelayedCallback& callback) {
   return true;
 }
 
 void AtomDownloadManagerDelegate::GetNextId(
     const content::DownloadIdCallback& callback) {
-  static uint32_t next_id = content::DownloadItem::kInvalidId + 1;
+  static uint32_t next_id = DownloadItem::kInvalidId + 1;
   callback.Run(next_id++);
 }
 

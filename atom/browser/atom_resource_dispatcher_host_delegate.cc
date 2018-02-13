@@ -15,7 +15,6 @@
 #include "chrome/browser/loader/safe_browsing_resource_throttle.h"
 #include "chrome/browser/safe_browsing/safe_browsing_service.h"
 #include "components/offline_pages/features/features.h"
-#include "components/policy/core/common/cloud/policy_header_io_helper.h"
 #include "components/variations/net/variations_http_headers.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/resource_request_info.h"
