@@ -277,7 +277,7 @@ void AtomDownloadManagerDelegate:: OnDownloadItemSelected(
 
   callback.Run(paths[0],
                content::DownloadItem::TARGET_DISPOSITION_PROMPT,
-               content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS, paths[0],
+               download_item->GetDangerType(), paths[0],
                content::DOWNLOAD_INTERRUPT_REASON_NONE);
 }
 
@@ -335,15 +335,16 @@ void AtomDownloadManagerDelegate::OnDownloadTargetDetermined(
 
   // Show save dialog if save path was not set already on item
   ui::SelectFileDialog::FileTypeInfo file_type_info;
-  if (path.empty()) {
-    std::vector<base::FilePath::StringType> extensions;
-    base::FilePath::StringType extension;
-    if (GetItemExtension(item, &extension)) {
-      extensions.push_back(extension);
-      file_type_info.extensions.push_back(extensions);
-    }
-    file_type_info.include_all_files = true;
-    new extensions::FileEntryPicker(
+  std::vector<base::FilePath::StringType> extensions;
+  base::FilePath::StringType extension;
+
+  if (GetItemExtension(item, &extension)) {
+    extensions.push_back(extension);
+    file_type_info.extensions.push_back(extensions);
+  }
+
+  file_type_info.include_all_files = true;
+  new extensions::FileEntryPicker(
       window->inspectable_web_contents()->GetWebContents(),
       path,
       file_type_info,
@@ -352,15 +353,6 @@ void AtomDownloadManagerDelegate::OnDownloadTargetDetermined(
                  base::Unretained(this), callback, download_item),
       base::Bind(&AtomDownloadManagerDelegate::OnDownloadItemSelectionCancelled,
                  base::Unretained(this), callback, item));
-  } else {
-    if (download_item)
-      download_item->SetSavePath(path);
-
-    callback.Run(path,
-                 content::DownloadItem::TARGET_DISPOSITION_PROMPT,
-                 target_info->danger_type, path,
-                 target_info->result);
-  }
 }
 
 void AtomDownloadManagerDelegate::Shutdown() {

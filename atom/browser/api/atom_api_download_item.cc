@@ -14,7 +14,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "content/browser/download/download_item_impl.h"
-#include "content/public/browser/download_danger_type.h"
 #include "content/public/browser/download_item.h"
 #include "native_mate/dictionary.h"
 #include "net/base/filename_util.h"
@@ -90,6 +89,10 @@ void DownloadItem::OnDownloadUpdated(content::DownloadItem* item) {
   } else {
     Emit("updated", item->GetState());
   }
+}
+
+DownloadDangerType DownloadItem::GetDangerType() const {
+  return download_item_->GetDangerType();
 }
 
 void DownloadItem::OnDownloadRemoved(content::DownloadItem* download) {
