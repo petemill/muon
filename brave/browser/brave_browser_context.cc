@@ -455,9 +455,6 @@ void BraveBrowserContext::CreateProfilePrefs(
     pref_registry_->RegisterBooleanPref(prefs::kPrintingEnabled, true);
     pref_registry_->RegisterBooleanPref(prefs::kPrintPreviewDisabled, false);
     pref_registry_->RegisterBooleanPref(prefs::kSafeBrowsingEnabled, true);
-    pref_registry_->RegisterBooleanPref(prefs::kPromptForDownload, true);
-    pref_registry_->RegisterFilePathPref(prefs::kSaveFileDefaultDirectory,
-                                         download_dir);
 #if BUILDFLAG(ENABLE_PLUGINS)
     PluginInfoHostImpl::RegisterUserPrefs(pref_registry_.get());
     PepperFlashSettingsManager::RegisterProfilePrefs(pref_registry_.get());
