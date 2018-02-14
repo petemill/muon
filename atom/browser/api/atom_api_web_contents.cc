@@ -15,6 +15,8 @@
 #include "atom/browser/api/atom_api_web_request.h"
 #include "atom/browser/api/atom_api_window.h"
 #include "atom/browser/api/event.h"
+#include "chrome/browser/ui/browser.h"
+#include "chrome/browser/ui/browser_list.h"
 #include "atom/browser/atom_browser_client.h"
 #include "atom/browser/atom_browser_context.h"
 #include "atom/browser/atom_browser_main_parts.h"
@@ -808,7 +810,7 @@ void WebContents::AddNewContents(content::WebContents* source,
   if (was_blocked)
     *was_blocked = blocked;
 
-  if (blocked) {
+  if (was_blocked && *was_blocked) {
     auto guest = brave::TabViewGuest::FromWebContents(new_contents);
     if (guest) {
       guest->Destroy(true);
@@ -1217,6 +1219,24 @@ void WebContents::TabStripEmpty() {
 void WebContents::TabSelectionChanged(TabStripModel* tab_strip_model,
                                       const ui::ListSelectionModel& old_model) {
   Emit("tab-selection-changed");
+}
+
+void WebContents::TabReplacedAt(TabStripModel* tab_strip_model,
+                                 content::WebContents* old_contents,
+                                 content::WebContents* new_contents,
+                                 int index) {
+  if (old_contents == web_contents()) {
+    ::Browser* browser = nullptr;
+    for (auto* b : *BrowserList::GetInstance()) {
+      if (b->tab_strip_model() == tab_strip_model) {
+        browser = b;
+        break;
+      }
+    }
+
+    Emit("tab-replaced-at",
+        browser->session_id().id(), index, new_contents);
+  }
 }
 
 
