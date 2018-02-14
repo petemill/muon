@@ -435,7 +435,10 @@ content::WebContents* InspectableWebContentsImpl::GetWebContents() {
 }
 
 content::WebContents* InspectableWebContentsImpl::GetDevToolsWebContents() const {
-  return devtools_web_contents_.get();
+  if (external_devtools_web_contents_)
+    return external_devtools_web_contents_;
+  else
+    return managed_devtools_web_contents_.get();
 }
 
 void InspectableWebContentsImpl::SetDelegate(InspectableWebContentsDelegate* delegate) {
@@ -455,43 +458,58 @@ void InspectableWebContentsImpl::SetDockState(const std::string& state) {
   }
 }
 
+void InspectableWebContentsImpl::SetDevToolsWebContents(
+    content::WebContents* devtools) {
+  if (!managed_devtools_web_contents_)
+    external_devtools_web_contents_ = devtools;
+}
+
 void InspectableWebContentsImpl::ShowDevTools() {
+
+  if (embedder_message_dispatcher_) {
+    if (managed_devtools_web_contents_) {
+      view_->ShowDevTools();
+    }
+    return;
+  }
+
   // Show devtools only after it has done loading, this is to make sure the
   // SetIsDocked is called *BEFORE* ShowDevTools.
-  if (!devtools_web_contents_) {
-    embedder_message_dispatcher_.reset(
-        DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(this));
+  embedder_message_dispatcher_.reset(
+      DevToolsEmbedderMessageDispatcher::CreateForDevToolsFrontend(this));
 
-    content::WebContents::CreateParams create_params(web_contents_->GetBrowserContext());
-    devtools_web_contents_.reset(content::WebContents::Create(create_params));
-
-    Observe(devtools_web_contents_.get());
-    devtools_web_contents_->SetDelegate(this);
-
-    agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_);
-    agent_host_->AttachClient(this);
-
-    devtools_web_contents_->GetController().LoadURL(
-        GetDevToolsURL(can_dock_, dock_state_),
-        content::Referrer(),
-        ui::PAGE_TRANSITION_AUTO_TOPLEVEL,
-        std::string());
-  } else {
-    view_->ShowDevTools();
+  if (!external_devtools_web_contents_) {  // no external devtools
+    managed_devtools_web_contents_.reset(
+        content::WebContents::Create(
+            content::WebContents::CreateParams(
+                web_contents_->GetBrowserContext())));
+    managed_devtools_web_contents_->SetDelegate(this);
   }
+  
+  Observe(GetDevToolsWebContents());
+  agent_host_ = content::DevToolsAgentHost::GetOrCreateFor(web_contents_);
+  agent_host_->AttachClient(this);
+
+  GetDevToolsWebContents()->GetController().LoadURL(
+      GetDevToolsURL(can_dock_, dock_state_),
+      content::Referrer(),
+      ui::PAGE_TRANSITION_AUTO_TOPLEVEL,
+      std::string());
 }
 
 void InspectableWebContentsImpl::CloseDevTools() {
-  if (devtools_web_contents_) {
-    view_->CloseDevTools();
-    devtools_web_contents_.reset();
+  if (GetDevToolsWebContents()) {
+    if (managed_devtools_web_contents_) {
+      view_->CloseDevTools();
+      managed_devtools_web_contents_.reset();
+    }
     if (web_contents_)
       web_contents_->Focus();
   }
 }
 
 bool InspectableWebContentsImpl::IsDevToolsViewShowing() {
-  return devtools_web_contents_ && view_->IsDevToolsViewShowing();
+  return managed_devtools_web_contents_ && view_->IsDevToolsViewShowing();
 }
 
 void InspectableWebContentsImpl::ShowCertificateViewer(
@@ -556,7 +574,7 @@ void InspectableWebContentsImpl::CallClientFunction(const std::string& function_
                                                     const base::Value* arg1,
                                                     const base::Value* arg2,
                                                     const base::Value* arg3) {
-  if (!devtools_web_contents_)
+  if (!GetDevToolsWebContents())
     return;
 
   std::string javascript = function_name + "(";
@@ -574,7 +592,7 @@ void InspectableWebContentsImpl::CallClientFunction(const std::string& function_
     }
   }
   javascript.append(");");
-  devtools_web_contents_->GetMainFrame()->ExecuteJavaScript(
+  GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
       base::UTF8ToUTF16(javascript));
 }
 
@@ -609,7 +627,8 @@ void InspectableWebContentsImpl::CloseWindow() {
 
 void InspectableWebContentsImpl::LoadCompleted() {
   frontend_loaded_ = true;
-  view_->ShowDevTools();
+  if (managed_devtools_web_contents_)
+    view_->ShowDevTools();
 
   // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
   if (!can_dock_)
@@ -625,14 +644,16 @@ void InspectableWebContentsImpl::SetInspectedPageBounds(const gfx::Rect& rect) {
     return;
 
   contents_resizing_strategy_.CopyFrom(strategy);
-  view_->SetContentsResizingStrategy(contents_resizing_strategy_);
+  if (managed_devtools_web_contents_)
+    view_->SetContentsResizingStrategy(contents_resizing_strategy_);
 }
 
 void InspectableWebContentsImpl::InspectElementCompleted() {
 }
 
 void InspectableWebContentsImpl::InspectedURLChanged(const std::string& url) {
-  view_->SetTitle(base::UTF8ToUTF16(base::StringPrintf(kTitleFormat,
+  if (managed_devtools_web_contents_)
+    view_->SetTitle(base::UTF8ToUTF16(base::StringPrintf(kTitleFormat,
                                                        url.c_str())));
 }
 
@@ -649,7 +670,7 @@ void InspectableWebContentsImpl::LoadNetworkResource(
     return;
   }
 
-  auto browser_context = static_cast<BrowserContext*>(devtools_web_contents_->GetBrowserContext());
+  auto browser_context = static_cast<BrowserContext*>(GetDevToolsWebContents()->GetBrowserContext());
 
   net::URLFetcher* fetcher = (
       net::URLFetcher::Create(gurl, net::URLFetcher::GET,
@@ -664,7 +685,8 @@ void InspectableWebContentsImpl::LoadNetworkResource(
 
 void InspectableWebContentsImpl::SetIsDocked(const DispatchCallback& callback,
                                              bool docked) {
-  view_->SetIsDocked(docked);
+  if (managed_devtools_web_contents_)
+    view_->SetIsDocked(docked);
   if (!callback.is_null())
     callback.Run(nullptr);
 }
@@ -820,7 +842,7 @@ void InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend(const std::st
 
 void InspectableWebContentsImpl::DispatchProtocolMessage(
     content::DevToolsAgentHost* agent_host, const std::string& message) {
-  if (!frontend_loaded_ || !devtools_web_contents_)
+  if (!frontend_loaded_ || !GetDevToolsWebContents())
     return;
 
   if (message.length() < kMaxMessageChunkSize) {
@@ -828,7 +850,7 @@ void InspectableWebContentsImpl::DispatchProtocolMessage(
     base::EscapeJSONString(message, true, &param);
     base::string16 javascript =
         base::UTF8ToUTF16("DevToolsAPI.dispatchMessage(" + param + ");");
-    devtools_web_contents_->GetMainFrame()->ExecuteJavaScript(javascript);
+    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(javascript);
     return;
   }
 
@@ -857,7 +879,7 @@ void InspectableWebContentsImpl::ReadyToCommitNavigation(
         frame,
         base::Bind(
             &InspectableWebContentsImpl::HandleMessageFromDevToolsFrontend,
-            base::Unretained(this))));
+            weak_factory_.GetWeakPtr())));
     return;
   }
   std::string origin = navigation_handle->GetURL().GetOrigin().spec();
@@ -871,8 +893,9 @@ void InspectableWebContentsImpl::ReadyToCommitNavigation(
 
 void InspectableWebContentsImpl::WebContentsDestroyed() {
   frontend_loaded_ = false;
+  external_devtools_web_contents_ = nullptr;
   Detach();
-
+  embedder_message_dispatcher_.reset();
   pending_requests_.clear();
 
   if (view_ && view_->GetDelegate())

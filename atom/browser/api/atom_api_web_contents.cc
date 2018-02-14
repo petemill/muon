@@ -1491,10 +1491,11 @@ void WebContents::DevToolsOpened() {
   managed_web_contents()->CallClientFunction(
       "DevToolsAPI.setInspectedTabId", &tab_id, nullptr, nullptr);
 
-  // Inherit owner window in devtools.
-  if (owner_window())
-    handle->SetOwnerWindow(managed_web_contents()->GetDevToolsWebContents(),
-                           owner_window());
+  // Inherit owner window in devtools when it doesn't have one.
+  auto* devtools = managed_web_contents()->GetDevToolsWebContents();
+  //bool has_window = devtools->GetUserData(NativeWindowRelay::UserDataKey());
+  if (owner_window()) // && !has_window)
+    handle->SetOwnerWindow(devtools, owner_window());
 
   Emit("devtools-opened");
 }
@@ -1919,7 +1920,8 @@ void WebContents::OpenDevTools(mate::Arguments* args) {
   std::string state;
   if (IsGuest() || type_ == BACKGROUND_PAGE || !owner_window()) {
     state = "detach";
-  } else if (args && args->Length() == 1) {
+  }
+  if (args && args->Length() == 1) {
     bool detach = false;
     mate::Dictionary options;
     if (args->GetNext(&options)) {
@@ -2497,6 +2499,11 @@ v8::Local<v8::Value> WebContents::GetOwnerBrowserWindow() {
     return v8::Null(isolate());
 }
 
+void WebContents::SetDevToolsWebContents(const WebContents* devtools) {
+  if (managed_web_contents())
+    managed_web_contents()->SetDevToolsWebContents(devtools->web_contents());
+}
+
 void WebContents::SetZoomLevel(double zoom) {
   zoom::ZoomController* zoom_controller =
       zoom::ZoomController::FromWebContents(web_contents());
@@ -2635,6 +2642,7 @@ void WebContents::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("savePage", &WebContents::SavePage)
       .SetMethod("openDevTools", &WebContents::OpenDevTools)
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)
+      .SetMethod("setDevToolsWebContents", &WebContents::SetDevToolsWebContents)
       .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
       .SetMethod("isDevToolsFocused", &WebContents::IsDevToolsFocused)
       .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)

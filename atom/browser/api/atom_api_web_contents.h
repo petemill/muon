@@ -201,6 +201,7 @@ class WebContents : public mate::TrackableObject<WebContents>,
   void SetAudioMuted(bool muted);
   bool IsAudioMuted();
   void Print(mate::Arguments* args);
+  void SetDevToolsWebContents(const WebContents* devtools);
   int GetContentWindowId();
   void ResumeLoadingCreatedWebContents();
 

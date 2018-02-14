@@ -44,6 +44,7 @@ const syncMethods = [
 var WEB_VIEW_API_METHODS = [
   'attachGuest',
   'detachGuest',
+  'getId'
 ].concat(asyncMethods).concat(syncMethods)
 
 asyncMethods.forEach((method) => {
@@ -67,6 +68,14 @@ syncMethods.forEach((method) => {
     }
   }
 })
+
+WebViewImpl.prototype.getWebContents = function () {
+  if (!this.webContents_) {
+    console.error('webContents is not available for webview')
+  } else {
+    return this.webContents_
+  }
+}
 
 // -----------------------------------------------------------------------------
 // Custom API method implementations.
