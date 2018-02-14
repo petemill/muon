@@ -34,22 +34,20 @@ bool IsFastTabUnloadEnabled() {
 
 }  // namespace
 
-Browser::CreateParams::CreateParams(Profile* profile, bool user_gesture)
+Browser::CreateParams::CreateParams(Profile* profile)
     : type(TYPE_TABBED),
       profile(profile),
       trusted_source(false),
       initial_show_state(ui::SHOW_STATE_DEFAULT),
       is_session_restore(false),
-      user_gesture(user_gesture),
       window(NULL) {}
 
-Browser::CreateParams::CreateParams(Type type, Profile* profile, bool user_gesture)
+Browser::CreateParams::CreateParams(Type type, Profile* profile)
     : type(type),
       profile(profile),
       trusted_source(false),
       initial_show_state(ui::SHOW_STATE_DEFAULT),
       is_session_restore(false),
-      user_gesture(user_gesture),
       window(NULL) {}
 
 Browser::CreateParams::CreateParams(const CreateParams& other) = default;

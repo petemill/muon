@@ -6,7 +6,6 @@
 
 #include "atom/browser/api/atom_api_app.h"
 #include "atom/browser/atom_resource_dispatcher_host_delegate.h"
-#include "base/path_service.h"
 #include "brave/browser/component_updater/brave_component_updater_configurator.h"
 #include "chrome/browser/chrome_device_client.h"
 #include "chrome/browser/io_thread.h"
