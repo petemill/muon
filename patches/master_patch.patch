@@ -163,46 +163,52 @@ index e2faffbfcb27da0329d3e388fea8758d49139e8e..d8cdceffbc4b048395957dcae935a4c4
            "translate::mojom::ContentTranslateDriver"
          ],
 diff --git a/chrome/browser/download/download_target_determiner.cc b/chrome/browser/download/download_target_determiner.cc
-index 4f4dadd98fd997e9659d10e6989916dbb0bb899e..72a3f10900c19a6e4cc544bbec52a4a3a451af59 100644
+index 4f4dadd98fd997e9659d10e6989916dbb0bb899e..0b2601c077afaa68832c7404dfc9e7a0dbd4f265 100644
 --- a/chrome/browser/download/download_target_determiner.cc
 +++ b/chrome/browser/download/download_target_determiner.cc
-@@ -92,7 +92,7 @@ DownloadTargetDeterminer::DownloadTargetDeterminer(
-     DownloadPrefs* download_prefs,
-     DownloadTargetDeterminerDelegate* delegate,
-     const CompletionCallback& callback)
--    : next_state_(STATE_GENERATE_TARGET_PATH),
-+    : next_state_(STATE_CHECK_DOWNLOAD_URL),
-       confirmation_reason_(DownloadConfirmationReason::NONE),
-       should_notify_extensions_(false),
-       create_target_directory_(false),
-@@ -327,7 +327,7 @@ DownloadTargetDeterminer::Result
+@@ -112,6 +112,9 @@ DownloadTargetDeterminer::DownloadTargetDeterminer(
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
+   DCHECK(download_);
+   DCHECK(delegate);
++#if defined(MUON_CHROMIUM_BUILD)
++  next_state_ = STATE_GENERATE_TARGET_PATH;
++#endif
+   download_->AddObserver(this);
+ 
+   DoLoop();
+@@ -328,6 +331,9 @@ DownloadTargetDeterminer::Result
    DCHECK(!virtual_path_.empty());
  
--  next_state_ = STATE_PROMPT_USER_FOR_DOWNLOAD_PATH;
+   next_state_ = STATE_PROMPT_USER_FOR_DOWNLOAD_PATH;
++#if defined(MUON_CHROMIUM_BUILD)
 +  next_state_ = STATE_DETERMINE_LOCAL_PATH;
++#endif
    if (download_->GetState() != DownloadItem::IN_PROGRESS)
      return CONTINUE;
  
-@@ -449,7 +449,7 @@ DownloadTargetDeterminer::Result
-   DCHECK(!virtual_path_.empty());
+@@ -450,7 +456,9 @@ DownloadTargetDeterminer::Result
    DCHECK(local_path_.empty());
  
--  next_state_ = STATE_DETERMINE_MIME_TYPE;
+   next_state_ = STATE_DETERMINE_MIME_TYPE;
+-
++#if defined(MUON_CHROMIUM_BUILD)
 +  next_state_ = STATE_CHECK_VISITED_REFERRER_BEFORE;
- 
++#endif
    delegate_->DetermineLocalPath(
        download_,
-@@ -650,7 +650,7 @@ DownloadTargetDeterminer::Result
-     DownloadTargetDeterminer::DoCheckDownloadUrl() {
+       virtual_path_,
+@@ -651,7 +659,9 @@ DownloadTargetDeterminer::Result
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    DCHECK(!virtual_path_.empty());
--  next_state_ = STATE_CHECK_VISITED_REFERRER_BEFORE;
+   next_state_ = STATE_CHECK_VISITED_REFERRER_BEFORE;
+-
++#if defined(MUON_CHROMIUM_BUILD)
 +  next_state_ = STATE_RESERVE_VIRTUAL_PATH;
- 
++#endif
    // If user has validated a dangerous download, don't check.
    if (danger_type_ == content::DOWNLOAD_DANGER_TYPE_USER_VALIDATED)
-@@ -730,6 +730,7 @@ void DownloadTargetDeterminer::CheckVisitedReferrerBeforeDone(
+     return CONTINUE;
+@@ -730,6 +740,7 @@ void DownloadTargetDeterminer::CheckVisitedReferrerBeforeDone(
    danger_level_ = GetDangerLevel(
        visited_referrer_before ? VISITED_REFERRER : NO_VISITS_TO_REFERRER);
    if (danger_level_ != DownloadFileType::NOT_DANGEROUS &&
@@ -210,7 +216,7 @@ index 4f4dadd98fd997e9659d10e6989916dbb0bb899e..72a3f10900c19a6e4cc544bbec52a4a3
        danger_type_ == content::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS)
      danger_type_ = content::DOWNLOAD_DANGER_TYPE_DANGEROUS_FILE;
    DoLoop();
-@@ -942,9 +943,7 @@ DownloadFileType::DangerLevel DownloadTargetDeterminer::GetDangerLevel(
+@@ -942,9 +953,7 @@ DownloadFileType::DangerLevel DownloadTargetDeterminer::GetDangerLevel(
    // User-initiated extension downloads from pref-whitelisted sources are not
    // considered dangerous.
    if (download_->HasUserGesture() &&
@@ -585,6 +591,19 @@ index 4275342f9244aa005521882c23767662fa2a681c..de4b9e02182dd4ed34e248d993c2a5f1
  
    return signin_manager ? signin_manager->GetAuthenticatedAccountInfo()
                          : AccountInfo();
+diff --git a/chrome/browser/safe_browsing/chrome_password_protection_service.h b/chrome/browser/safe_browsing/chrome_password_protection_service.h
+index 9f9a34a962f52c4f9a56b1f0bd25ab350c5cdd05..fefa41dac43a699f3c8fe5b9ac2ef4df6496a451 100644
+--- a/chrome/browser/safe_browsing/chrome_password_protection_service.h
++++ b/chrome/browser/safe_browsing/chrome_password_protection_service.h
+@@ -40,7 +40,7 @@ using url::Origin;
+ void ShowPasswordReuseModalWarningDialog(
+     content::WebContents* web_contents,
+     ChromePasswordProtectionService* service,
+-    OnWarningDone done_callback);
++    OnWarningDone done_callback) {}
+ 
+ // Called by ChromeContentBrowserClient to create a
+ // PasswordProtectionNavigationThrottle if appropriate.
 diff --git a/chrome/browser/safe_browsing/download_protection/check_client_download_request.cc b/chrome/browser/safe_browsing/download_protection/check_client_download_request.cc
 index 7d32a4cc7a0f1d2230d1f965431a291424ae0db1..e3942cd359082aea43635ff53b2f67b192c0d43a 100644
 --- a/chrome/browser/safe_browsing/download_protection/check_client_download_request.cc
