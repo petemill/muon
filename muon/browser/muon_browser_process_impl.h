@@ -33,14 +33,8 @@ class MuonBrowserProcessImpl : public BrowserProcessImpl {
   component_updater::ComponentUpdateService* component_updater() override;
 
   void ResourceDispatcherHostCreated() override;
-  safe_browsing::SafeBrowsingService* safe_browsing_service() override;
-  safe_browsing::ClientSideDetectionService* safe_browsing_detection_service()
-      override;
 
  private:
-  void CreateSafeBrowsingService();
-  void CreateSafeBrowsingDetectionService();
-
   atom::api::App* app_;  // not owned
 
   std::unique_ptr<atom::AtomResourceDispatcherHostDelegate>
