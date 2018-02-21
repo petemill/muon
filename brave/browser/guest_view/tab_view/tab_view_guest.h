@@ -90,6 +90,9 @@ class TabViewGuest : public guest_view::GuestView<TabViewGuest> {
   bool clone_;
 
   bool can_run_detached_;
+
+  bool initialized_;
+
   // Stores the src URL of the WebView.
   GURL src_;
 

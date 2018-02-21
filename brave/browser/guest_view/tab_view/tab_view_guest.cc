@@ -108,7 +108,7 @@ void TabViewGuest::WebContentsCreated(
 WebContents* TabViewGuest::OpenURLFromTab(
     WebContents* source,
     const content::OpenURLParams& params) {
-  if (!attached()) {
+  if (!initialized_) {
     TabViewGuest* opener = GetOpener();
     // If the guest wishes to navigate away prior to attachment then we save the
     // navigation to perform upon attachment. Navigation initializes a lot of
@@ -233,6 +233,7 @@ void TabViewGuest::DidInitialize(const base::DictionaryValue& create_params) {
   api_web_contents_->guest_delegate_ = this;
   web_contents()->SetDelegate(api_web_contents_);
 
+  initialized_ = true;
   ApplyAttributes(create_params);
 }
 
@@ -287,7 +288,7 @@ void TabViewGuest::ApplyAttributes(const base::DictionaryValue& params) {
     auto it = GetOpener()->pending_new_windows_.find(this);
     if (it != GetOpener()->pending_new_windows_.end()) {
       const NewWindowInfo& new_window_info = it->second;
-      if (attached()) {
+      if (initialized_ || true) {
         if (new_window_info.changed || !web_contents()->HasOpener()) {
           NavigateGuest(
               new_window_info.url.spec(), false /* force_navigation */);
@@ -298,7 +299,7 @@ void TabViewGuest::ApplyAttributes(const base::DictionaryValue& params) {
         GetOpener()->pending_new_windows_.erase(this);
       }
       is_pending_new_window = true;
-    } else if (attached() && clone_) {
+    } else if (initialized_ && clone_) {
       clone_ = false;
       web_contents()->GetController().CopyStateFrom(
           GetOpener()->web_contents()->GetController(), true);
@@ -316,7 +317,7 @@ void TabViewGuest::ApplyAttributes(const base::DictionaryValue& params) {
         src_ = GURL(src);
       }
 
-      if (attached() &&
+      if (initialized_ &&
           web_contents()->GetController().IsInitialNavigation()) {
         NavigateGuest(src_.spec(), true);
       }
@@ -384,7 +385,7 @@ void TabViewGuest::WillDestroy() {
     api_web_contents_->WebContentsDestroyed();
   api_web_contents_ = nullptr;
 
-  if (!attached() && GetOpener())
+  if (!initialized_ && GetOpener())
     GetOpener()->pending_new_windows_.erase(this);
 }
 
